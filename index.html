@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kids Number Match - Ultimate Arcade Edition</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff4757">
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%);
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --cell-bg: #ffffff;
+            --primary-color: #ff4757;
+            --text-color: #2f3542;
+            --cell-text: #3742fa;
+        }
+
+        /* THEMES */
+        body.theme-space {
+            --bg-gradient: linear-gradient(135deg, #141E30 0%, #243B55 100%);
+            --panel-bg: rgba(0, 0, 0, 0.6); --cell-bg: #2C3E50; --text-color: #ecf0f1; --cell-text: #f1c40f;
+        }
+        body.theme-space .number-cell { box-shadow: 0 4px 0 #1a252f; border: 1px solid #34495e; }
+        body.theme-space .kids-font { text-shadow: 2px 2px 0px #000; }
+
+        body.theme-ocean {
+            --bg-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --panel-bg: rgba(255, 255, 255, 0.7); --cell-bg: #e0f7fa; --text-color: #01579b; --cell-text: #00838f;
+        }
+        body.theme-ocean .number-cell { box-shadow: 0 4px 0 #80deea; }
+
+        body.theme-candy {
+            --bg-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            --panel-bg: rgba(255, 255, 255, 0.9); --cell-bg: #fff; --text-color: #d81b60; --cell-text: #ec407a;
+        }
+        body.theme-candy .number-cell { box-shadow: 0 4px 0 #f8bbd0; border: 2px solid #ff80ab; }
+
+        * { touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { background: var(--bg-gradient); background-attachment: fixed; color: var(--text-color); font-family: 'Nunito', sans-serif; min-height: 100vh; margin: 0; overflow: hidden; transition: background 0.5s ease; }
+
+        .bubbles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .bubble { position: absolute; bottom: -20px; background: rgba(255,255,255,0.2); border-radius: 50%; animation: floatUp 10s infinite ease-in; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-120vh) scale(1.5); opacity: 0; } }
+
+        .kids-font { font-family: 'Fredoka One', cursive; text-shadow: 1px 1px 0px #fff; transition: text-shadow 0.3s; }
+
+        /* START SCREEN */
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-gradient); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        .start-logo { width: 220px; height: auto; border-radius: 20px; margin-bottom: 20px; border: 4px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: pulseLogo 2s infinite; }
+        @keyframes pulseLogo { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        .bounce { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-25px); } 60% { transform: translateY(-12px); } }
+
+        .mode-toggle { background: #fff; border: 5px solid var(--primary-color); border-radius: 50px; padding: 8px 25px; font-size: 2rem; margin: 25px 0; box-shadow: 0 6px 0 var(--primary-color); cursor: pointer; font-family: 'Fredoka One', cursive; display: flex; align-items: center; gap: 15px; }
+        .mode-toggle:active { transform: translateY(6px); box-shadow: 0 0 0 var(--primary-color); }
+        .btn-start { background: #ffa502; color: white; border: none; border-radius: 50px; padding: 12px 50px; font-size: 2.5rem; box-shadow: 0 8px 0 #e67e22; font-family: 'Fredoka One', cursive; cursor: pointer; }
+        .btn-start:active { transform: translateY(8px); box-shadow: 0 0 0 #e67e22; }
+
+        /* GAME LAYOUT */
+        #main-game { height: 100vh; display: flex; flex-direction: column; padding: 10px 5px; position: relative; }
+        .glass-header { background: var(--panel-bg); backdrop-filter: blur(10px); border-radius: 1rem; padding: 10px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.3); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; z-index: 10; transition: all 0.3s ease; }
+        .header-info { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+        .score-text { font-size: 1.1rem; color:#ffa502; display: flex; align-items: center; gap: 5px;}
+        .target-text { font-size: 1.2rem; color:#2ed573; }
+        .coin-text { font-size: 1rem; color: #f1c40f; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px;}
+
+        .btn-icon { width: 38px; height: 38px; border: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.2); cursor: pointer; margin: 0 2px; }
+        .btn-icon:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.2); }
+        .btn-exit { background: #ff4757; } .btn-redo { background: #1e90ff; } .btn-shop { background: #e84393; }
+
+        /* BOARD */
+        .board-container { flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; padding: 5px; -ms-overflow-style: none; scrollbar-width: none; touch-action: pan-y; padding-bottom: 120px; }
+        .board-container::-webkit-scrollbar { display: none; }
+        .board-container::before { content: ''; margin-top: auto; }
+        .board-container::after { content: ''; margin-bottom: auto; min-height: 80px; }
+
+        #game-board { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; width: 100%; max-width: 550px; touch-action: none; flex-shrink: 0; transition: all 0.3s ease; }
+
+        .number-cell { aspect-ratio: 1; background: var(--cell-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: clamp(1.2rem, 5vw, 1.8rem); font-family: 'Fredoka One', cursive; color: var(--cell-text); box-shadow: 0 4px 0 #dfe4ea; position: relative; z-index: 2; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; }
+        .idle-wiggle { animation: wiggle 3s infinite; }
+        @keyframes wiggle { 0%, 90%, 100% { transform: rotate(0deg) scale(1); } 92% { transform: rotate(5deg) scale(1.05); } 96% { transform: rotate(-5deg) scale(1.05); } }
+
+        .number-cell.selected { background: #ffeaa7; color: #ff4757; transform: scale(1.15) translateY(2px); box-shadow: 0 4px 0 #f5cd79; z-index: 5; border: 2px solid #ff4757; animation: none; }
+        .number-cell.hint { animation: hintGlow 1s infinite alternate; border: 2px solid #f1c40f; z-index: 4; }
+        @keyframes hintGlow { from { box-shadow: 0 0 10px #f1c40f; background: #fffde7; } to { box-shadow: 0 0 20px #f39c12; background: #fff9c4; } }
+        .number-cell.matched { visibility: hidden; pointer-events: none; }
+
+        #drag-svg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; }
+        #drag-line { stroke: #ff4757; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 12, 12; animation: flowDash 0.4s linear infinite; filter: drop-shadow(0 2px 4px rgba(255,71,87,0.5)); display: none; }
+        @keyframes flowDash { to { stroke-dashoffset: -24; } }
+
+        /* POWER UP BAR */
+        .powerup-bar { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: var(--panel-bg); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 30px; display: flex; gap: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border: 2px solid rgba(255,255,255,0.4); z-index: 50; }
+        .powerup-btn { background: #fff; border: 3px solid #dfe6e9; border-radius: 50%; width: 50px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; position: relative; transition: all 0.2s; color: #2d3436; }
+        .powerup-btn .count-badge { position: absolute; bottom: -8px; background: #e74c3c; color: #fff; font-size: 0.7rem; font-family: 'Fredoka One', cursive; padding: 2px 6px; border-radius: 10px; border: 1px solid #fff; transition: background 0.3s; }
+        .powerup-btn .count-badge.has-items { background: #2ed573; }
+        .powerup-btn:active { transform: translateY(3px); }
+        .powerup-btn.active-power { border-color: #ff4757; background: #ffeaa7; animation: pulseLogo 1s infinite; color: #ff4757; }
+        .btn-main-add { background: #2ed573; color: white; border-color: #27ae60; font-size: 1.5rem; }
+
+        /* SHOP MODAL */
+        #shop-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px); }
+        #shop-modal.show { opacity: 1; pointer-events: auto; }
+        .shop-content { background: #fff; padding: 20px; border-radius: 20px; width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto; text-align: center; transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #shop-modal.show .shop-content { transform: scale(1); }
+        .shop-section-title { font-size: 1.2rem; margin: 15px 0 5px 0; color: #2d3436; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 5px;}
+        
+        .shop-item { border: 2px solid #dfe6e9; padding: 12px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-family: 'Fredoka One', cursive; transition: all 0.2s;}
+        .shop-item:active { transform: scale(0.95); }
+        
+        /* Theme Items */
+        .shop-item.theme-card { cursor: pointer; }
+        .shop-item.theme-card.owned { background: #f1f2f6; border-color: #bdc3c7; }
+        .shop-item.theme-card.active { background: #ffeaa7; border-color: #f1c40f; }
+        
+        /* Power-Up Items */
+        .shop-item.power-card { background: #fafafa; }
+        .buy-btn { background: #2ed573; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 0 #27ae60;}
+        .buy-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #27ae60; }
+        
+        .close-shop { background: #ff4757; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-family: 'Fredoka One', cursive; margin-top: 15px; box-shadow: 0 5px 0 #c0392b; cursor: pointer;}
+        .close-shop:active { transform: translateY(5px); box-shadow: 0 0 0 #c0392b; }
+
+        /* ANIMATIONS & TEXT */
+        .pop-anim { animation: popOut 0.4s ease forwards; }
+        @keyframes popOut { 0% { transform: scale(1); } 50% { transform: scale(1.4) rotate(15deg); background: #2ed573; color: white; } 100% { transform: scale(0) rotate(-15deg); opacity: 0; } }
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); background: #ff4757; color: white; } 75% { transform: translateX(5px) rotate(5deg); background: #ff4757; color: white; } }
+        .drop-in { animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+        @keyframes dropIn { 0% { transform: translateY(-30px) scale(0.5); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+
+        .floating-score { position: fixed; font-family: 'Fredoka One', cursive; color: #2ed573; font-size: 2.5rem; pointer-events: none; z-index: 200; animation: floatScore 1s ease-out forwards; text-shadow: 2px 2px 0 #fff; }
+        .combo-text { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Fredoka One', cursive; color: #ff9ff3; font-size: 4rem; text-shadow: 4px 4px 0 #fff, 0 0 20px rgba(255, 159, 243, 0.8); pointer-events: none; z-index: 300; animation: comboPop 1s ease-out forwards; }
+        @keyframes floatScore { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-60px) scale(1.5); opacity: 0; } }
+        @keyframes comboPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -60%) scale(1); opacity: 0; } }
+
+        .watermark { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.9); padding: 4px 12px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Fredoka One', cursive; color: #747d8c; font-size: 1rem; border: 2px solid white; z-index: 40; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .watermark-logo { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+        .particle { position: fixed; pointer-events: none; font-size: 2rem; animation: fall 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; z-index: 105; }
+        @keyframes fall { 0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(360deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="bubbles" id="bubble-container"></div>
+<svg id="drag-svg"><line id="drag-line" x1="0" y1="0" x2="0" y2="0"></line></svg>
+
+<div id="start-screen">
+    <img src="logo.png" alt="AABFC Logo" class="start-logo" onerror="this.src='https://via.placeholder.com/220?text=AABFC'">
+    <h1 class="kids-font bounce mb-2 text-center px-2" style="font-size: 3.2rem; color: #fff; text-shadow: 4px 4px 0 #ff4757;">
+        <i class="fas fa-magic"></i> Number Magic
+    </h1>
+    <div class="mode-toggle" id="mode-btn" onclick="toggleMode()">
+        <i class="fas fa-hand-pointer text-muted" style="font-size: 1.4rem;"></i>
+        <span style="color: #2f3542;">Make <strong id="target-display-start" style="color:#ff4757; font-size:2.5rem;">5</strong></span>
+    </div>
+    <button class="btn-start mt-2" onclick="startGame()">PLAY!</button>
+</div>
+
+<div id="main-game" class="d-none">
+    <div class="glass-header">
+        <button class="btn-icon btn-exit" onclick="exitGame()"><i class="fas fa-home"></i></button>
+        <div class="header-info kids-font">
+            <div class="score-text">
+                <i class="fas fa-star"></i> <span id="score-display">0</span>
+                <div class="coin-text"><i class="fas fa-coins"></i> <span id="coin-display">10</span></div>
+            </div>
+            <div class="target-text">Make <span id="target-display-game">5</span></div>
+        </div>
+        <div>
+            <button class="btn-icon btn-shop" onclick="toggleShop()"><i class="fas fa-shopping-cart"></i></button>
+            <button class="btn-icon btn-redo" onclick="initGame()"><i class="fas fa-redo"></i></button>
+        </div>
+    </div>
+    
+    <div class="board-container">
+        <div id="game-board"></div>
+    </div>
+
+    <div class="powerup-bar">
+        <div class="powerup-btn" id="btn-wand" onclick="activatePowerUp('wand')">
+            <i class="fas fa-magic" style="color: #9b59b6;"></i><span class="count-badge" id="count-wand">x0</span>
+        </div>
+        <div class="powerup-btn" id="btn-hammer" onclick="activatePowerUp('hammer')">
+            <i class="fas fa-gavel" style="color: #e67e22;"></i><span class="count-badge" id="count-hammer">x0</span>
+        </div>
+        <div class="powerup-btn" id="btn-bomb" onclick="activatePowerUp('bomb')">
+            <i class="fas fa-bomb" style="color: #2d3436;"></i><span class="count-badge" id="count-bomb">x0</span>
+        </div>
+        <div class="powerup-btn btn-main-add" onclick="addNumbers()">
+            <i class="fas fa-plus"></i>
+        </div>
+    </div>
+    
+    <div class="watermark">
+        <img src="image.png" alt="Logo" class="watermark-logo" onerror="this.src='https://via.placeholder.com/26'">
+        AABFC
+    </div>
+</div>
+
+<div id="shop-modal">
+    <div class="shop-content">
+        <h2 class="kids-font" style="color: #e84393;"><i class="fas fa-store"></i> Store</h2>
+        <div class="coin-text d-inline-block mb-2" style="font-size:1.2rem;"><i class="fas fa-coins"></i> <span id="shop-coin-display">10</span></div>
+        
+        <h3 class="kids-font shop-section-title"><i class="fas fa-bolt text-warning"></i> Power-Ups</h3>
+        
+        <div class="shop-item power-card">
+            <span><i class="fas fa-magic text-purple" style="color: #9b59b6;"></i> Magic Wand</span>
+            <button class="buy-btn" onclick="buyPowerUp('wand', 20)">20 <i class="fas fa-coins"></i></button>
+        </div>
+        <div class="shop-item power-card">
+            <span><i class="fas fa-gavel text-orange" style="color: #e67e22;"></i> Hammer</span>
+            <button class="buy-btn" onclick="buyPowerUp('hammer', 15)">15 <i class="fas fa-coins"></i></button>
+        </div>
+        <div class="shop-item power-card">
+            <span><i class="fas fa-bomb text-dark"></i> Bomb</span>
+            <button class="buy-btn" onclick="buyPowerUp('bomb', 30)">30 <i class="fas fa-coins"></i></button>
+        </div>
+
+        <h3 class="kids-font shop-section-title mt-3"><i class="fas fa-palette text-info"></i> Themes</h3>
+
+        <div class="shop-item theme-card active" id="theme-default" onclick="selectTheme('default', 0)">
+            <span><i class="fas fa-sun text-warning"></i> Classic Bubble</span>
+            <span class="theme-status text-success">Equipped</span>
+        </div>
+        <div class="shop-item theme-card" id="theme-space" onclick="selectTheme('space', 100)">
+            <span><i class="fas fa-rocket text-primary"></i> Deep Space</span>
+            <span class="theme-status text-warning">100 <i class="fas fa-coins"></i></span>
+        </div>
+        <div class="shop-item theme-card" id="theme-ocean" onclick="selectTheme('ocean', 150)">
+            <span><i class="fas fa-water text-info"></i> Ocean Dive</span>
+            <span class="theme-status text-warning">150 <i class="fas fa-coins"></i></span>
+        </div>
+        <div class="shop-item theme-card" id="theme-candy" onclick="selectTheme('candy', 200)">
+            <span><i class="fas fa-candy-cane text-danger"></i> Candy Land</span>
+            <span class="theme-status text-warning">200 <i class="fas fa-coins"></i></span>
+        </div>
+
+        <button class="close-shop" onclick="toggleShop()">Done</button>
+    </div>
+</div>
+
+<script>
+    // --- LOCAL STORAGE SYSTEM ---
+    const STORAGE_KEY = 'aabfc_number_match_save_v1';
+    
+    // Default Game State (Hard economy: 10 starter coins, 0 items)
+    let gameState = {
+        coins: 10,
+        unlockedThemes: ['default'],
+        currentTheme: 'default',
+        powerups: { wand: 0, hammer: 0, bomb: 0 }
+    };
+
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            gameState = { ...gameState, ...JSON.parse(saved) };
+        }
+        applyTheme(gameState.currentTheme);
+        updateInventoryUI();
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+        updateInventoryUI();
+    }
+
+    // System protections
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+        let now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) event.preventDefault();
+        lastTouchEnd = now;
+    }, false);
+    document.addEventListener('touchmove', function(event) {
+        if (event.scale !== 1 && event.scale !== undefined) event.preventDefault();
+        if (document.getElementById('shop-modal').classList.contains('show')) event.preventDefault();
+    }, { passive: false });
+
+    const bubbleContainer = document.getElementById('bubble-container');
+    for (let i=0; i<15; i++) {
+        let b = document.createElement('div'); b.className = 'bubble';
+        b.style.left = Math.random() * 100 + 'vw';
+        b.style.width = b.style.height = (Math.random() * 30 + 10) + 'px';
+        b.style.animationDuration = (Math.random() * 5 + 5) + 's';
+        b.style.animationDelay = (Math.random() * 5) + 's';
+        bubbleContainer.appendChild(b);
+    }
+
+    // Audio Engine
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    function playTone(freq, type, duration, vol = 0.1) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+    const Sounds = {
+        tap: () => playTone(600, 'sine', 0.1),
+        match: () => { playTone(400, 'sine', 0.1); setTimeout(() => playTone(800, 'sine', 0.2), 100); },
+        combo: () => { playTone(500, 'triangle', 0.1); setTimeout(() => playTone(1000, 'triangle', 0.2), 100); },
+        error: () => playTone(200, 'sawtooth', 0.2, 0.05),
+        powerup: () => { playTone(800, 'square', 0.1); setTimeout(() => playTone(1200, 'square', 0.2), 100); },
+        buy: () => { playTone(1000, 'sine', 0.1); setTimeout(() => playTone(1500, 'sine', 0.2), 100); },
+        win: () => [400, 500, 600, 800, 1000].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.2), i * 100))
+    };
+
+    // GAME VARIABLES
+    const COLS = 9;
+    let numbers = [];
+    let score = 0;
+    let targetSum = 5;
+    let isDragging = false, dragStartIndex = null, dragStartEl = null;
+    let comboMultiplier = 0; let comboTimer = null;
+    let activePowerUp = null;
+
+    const boardElement = document.getElementById('game-board');
+    const scoreElement = document.getElementById('score-display');
+    const coinElement = document.getElementById('coin-display');
+    const shopCoinElement = document.getElementById('shop-coin-display');
+    const dragLine = document.getElementById('drag-line');
+
+    // Initialize Save Data on Load
+    window.onload = loadState;
+
+    function toggleMode() {
+        initAudio(); Sounds.tap(); targetSum = (targetSum === 5) ? 10 : 5;
+        document.getElementById('target-display-start').innerText = targetSum; document.getElementById('target-display-game').innerText = targetSum;
+    }
+
+    function startGame() {
+        initAudio(); Sounds.win(); document.getElementById('start-screen').style.transform = "translateY(-100vh)";
+        setTimeout(() => { document.getElementById('start-screen').classList.add('d-none'); document.getElementById('main-game').classList.remove('d-none'); initGame(); }, 600);
+    }
+
+    function exitGame() {
+        Sounds.tap(); document.getElementById('main-game').classList.add('d-none'); document.getElementById('start-screen').classList.remove('d-none'); document.getElementById('start-screen').style.transform = "translateY(0)";
+    }
+
+    function generateSolvableNumbers(pairCount) {
+        let tempNums = []; let maxNum = targetSum - 1;
+        for (let i = 0; i < pairCount; i++) {
+            let n1 = Math.floor(Math.random() * maxNum) + 1; let n2 = targetSum - n1;
+            let insertPos = Math.floor(Math.random() * (tempNums.length + 1));
+            tempNums.splice(insertPos, 0, { value: n1, matched: false }, { value: n2, matched: false });
+        }
+        return tempNums;
+    }
+
+    function initGame() {
+        Sounds.tap(); score = 0; dragStartIndex = null; activePowerUp = null; clearPowerUpUI();
+        updateScore(); numbers = generateSolvableNumbers(18); renderBoard(true);
+    }
+
+    function renderBoard(animateIn = false) {
+        boardElement.innerHTML = '';
+        numbers.forEach((item, index) => {
+            const cell = document.createElement('div'); cell.classList.add('number-cell');
+            if (Math.random() > 0.6) cell.classList.add('idle-wiggle');
+            cell.innerText = item.value; cell.dataset.index = index;
+            if (item.matched) cell.classList.add('matched');
+            if (animateIn && !item.matched) { cell.classList.add('drop-in'); cell.style.animationDelay = `${(index % COLS) * 0.03}s`; }
+            if (dragStartIndex === index && !isDragging) cell.classList.add('selected');
+            boardElement.appendChild(cell);
+        });
+    }
+
+    // --- NEW INVENTORY LOGIC ---
+    function updateInventoryUI() {
+        const types = ['wand', 'hammer', 'bomb'];
+        types.forEach(type => {
+            const count = gameState.powerups[type];
+            const badge = document.getElementById(`count-${type}`);
+            badge.innerText = `x${count}`;
+            if (count > 0) badge.classList.add('has-items');
+            else badge.classList.remove('has-items');
+        });
+        coinElement.innerText = gameState.coins;
+        shopCoinElement.innerText = gameState.coins;
+    }
+
+    function activatePowerUp(type) {
+        initAudio();
+        if (activePowerUp === type) { activePowerUp = null; clearPowerUpUI(); return; } 
+        
+        if (gameState.powerups[type] <= 0) { 
+            // Empty Inventory Shake effect
+            const btn = document.getElementById(`btn-${type}`);
+            btn.classList.add('shake');
+            setTimeout(() => btn.classList.remove('shake'), 400);
+            Sounds.error(); 
+            return; 
+        }
+            Sounds.powerup(); activePowerUp = type; clearPowerUpUI();
+        document.getElementById(`btn-${type}`).classList.add('active-power');
+
+        if (type === 'wand') { executeWand(); } 
+    }
+
+    function clearPowerUpUI() {
+        document.querySelectorAll('.powerup-btn').forEach(btn => btn.classList.remove('active-power'));
+    }
+
+    function consumePowerUp(type) {
+        gameState.powerups[type] -= 1;
+        saveState();
+    }
+
+    function executeWand() {
+        for (let i = 0; i < numbers.length; i++) {
+            if (numbers[i].matched) continue;
+            for (let j = i + 1; j < numbers.length; j++) {
+                if (numbers[j].matched) continue;
+                if (isValidPair(i, j)) {
+                    consumePowerUp('wand');
+                    boardElement.children[i].classList.add('hint');
+                    boardElement.children[j].classList.add('hint');
+                    activePowerUp = null; clearPowerUpUI();
+                    return;
+                }
+            }
+        }
+        alert("No pairs currently available. Try adding lines!");
+        activePowerUp = null; clearPowerUpUI();
+    }
+
+    // --- INTERACTION ---
+    function getEventPos(e) {
+        if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY }; return { x: e.clientX, y: e.clientY };
+    }
+
+    boardElement.addEventListener('pointerdown', (e) => {
+        const target = e.target.closest('.number-cell');
+        if (!target || target.classList.contains('matched')) return; 
+        initAudio(); const index = parseInt(target.dataset.index); const pos = getEventPos(e);
+        
+        if (activePowerUp === 'bomb') {
+            consumePowerUp('bomb');
+            numbers[index].matched = true; Sounds.powerup(); createParticles(pos.x, pos.y);
+            activePowerUp = null; clearPowerUpUI(); removeEmptyRows(); renderBoard(); return;
+        }
+        if (activePowerUp === 'hammer') {
+            consumePowerUp('hammer');
+            numbers[index].value = Math.floor(Math.random() * (targetSum - 1)) + 1; Sounds.powerup(); createParticles(pos.x, pos.y);
+            activePowerUp = null; clearPowerUpUI(); renderBoard(); return;
+        }
+
+        const rect = target.getBoundingClientRect(); isDragging = true; dragStartEl = target;
+        if (dragStartIndex === null) { dragStartIndex = index; Sounds.tap(); target.classList.add('selected'); }
+
+        dragLine.setAttribute('x1', rect.left + rect.width / 2); dragLine.setAttribute('y1', rect.top + rect.height / 2);
+        dragLine.setAttribute('x2', pos.x); dragLine.setAttribute('y2', pos.y); dragLine.style.display = 'block';
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging || activePowerUp) return;
+        const pos = getEventPos(e); dragLine.setAttribute('x2', pos.x); dragLine.setAttribute('y2', pos.y);
+    }, { passive: false });
+
+    window.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false; dragLine.style.display = 'none'; const pos = getEventPos(e);
+        const dropTarget = document.elementFromPoint(pos.x, pos.y)?.closest('.number-cell');
+        
+        if (dropTarget && !dropTarget.classList.contains('matched')) {
+            const dropIndex = parseInt(dropTarget.dataset.index);
+            if (dragStartIndex !== null) {
+                if (dragStartIndex === dropIndex) {
+                    if (dragStartEl !== dropTarget) { Sounds.tap(); dragStartIndex = null; renderBoard(); }
+                } else { attemptMatch(dragStartIndex, dropIndex, pos.x, pos.y); }
+            }
+        } else if (dragStartEl) { renderBoard(); }
+    });
+
+    function attemptMatch(i, j, x, y) {
+        if (isValidPair(i, j)) {
+            comboMultiplier++;
+            clearTimeout(comboTimer);
+            comboTimer = setTimeout(() => { comboMultiplier = 0; }, 4000); 
+
+            let matchScore = targetSum;
+            // Hard Economy: 1 base coin per match, +1 for combo.
+            let coinsEarned = 1;
+
+            if (comboMultiplier > 1) {
+                matchScore = targetSum * comboMultiplier;
+                coinsEarned += 1; 
+                Sounds.combo();
+                showComboText(`COMBO x${comboMultiplier}!`);
+            } else {
+                Sounds.match();
+            }
+
+            let c1 = boardElement.children[i]; let c2 = boardElement.children[j];
+            c1.classList.remove('selected', 'hint'); c1.classList.add('pop-anim'); 
+            c2.classList.remove('hint'); c2.classList.add('pop-anim');
+            
+            createParticles(x, y); showFloatingText(`+${matchScore}`, x, y);
+            
+            score += matchScore; 
+            gameState.coins += coinsEarned; 
+            saveState(); updateScore(); 
+            dragStartIndex = null;
+
+            setTimeout(() => {
+                numbers[i].matched = true; numbers[j].matched = true;
+                removeEmptyRows(); renderBoard(); checkWinStatus();
+            }, 400); 
+        } else {
+            Sounds.error(); comboMultiplier = 0; 
+            let c1 = boardElement.children[i]; let c2 = boardElement.children[j];
+            c1.classList.remove('selected'); c1.classList.add('shake'); c2.classList.add('shake');
+            dragStartIndex = null; setTimeout(() => renderBoard(), 400); 
+        }
+    }
+
+    function isValidPair(i, j) {
+        if (numbers[i].value + numbers[j].value !== targetSum) return false;
+        let min = Math.min(i, j); let max = Math.max(i, j);
+        let isPathClear = true;
+        for (let k = min + 1; k < max; k++) { if (!numbers[k].matched) { isPathClear = false; break; } }
+        if (isPathClear) return true;
+        if (min % COLS === max % COLS) {
+            let isVerticalClear = true;
+            for (let k = min + COLS; k < max; k += COLS) { if (!numbers[k].matched) { isVerticalClear = false; break; } }
+            if (isVerticalClear) return true;
+        }
+        return false;
+    }
+
+    function removeEmptyRows() {
+        let totalRows = Math.ceil(numbers.length / COLS);
+        for (let r = totalRows - 1; r >= 0; r--) {
+            let rowEmpty = true;
+            for (let c = 0; c < COLS; c++) { let idx = r * COLS + c; if (idx < numbers.length && !numbers[idx].matched) { rowEmpty = false; break; } }
+            if (rowEmpty) numbers.splice(r * COLS, COLS);
+        }
+    }
+
+    function addNumbers() {
+        Sounds.tap(); const newNumbers = generateSolvableNumbers(9); 
+        numbers = numbers.concat(newNumbers); dragStartIndex = null; renderBoard(false);
+        setTimeout(() => { const container = document.querySelector('.board-container'); container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }); }, 50);
+    }
+
+    function updateScore() {
+        scoreElement.innerText = score; 
+        scoreElement.classList.remove('bounce'); void scoreElement.offsetWidth; scoreElement.classList.add('bounce');
+    }
+
+    function checkWinStatus() {
+        if (numbers.every(n => n.matched) && numbers.length > 0) {
+            Sounds.win(); setTimeout(() => { alert(`🌟 BOARD CLEARED! 🌟\nFinal Score: ${score}`); initGame(); }, 500);
+        }
+    }
+
+    // --- SHOP SYSTEM (Expanded) ---
+    function toggleShop() {
+        Sounds.tap(); 
+        refreshShopUI();
+        document.getElementById('shop-modal').classList.toggle('show');
+    }
+
+    function refreshShopUI() {
+        // Refresh Themes Status
+        const themes = ['default', 'space', 'ocean', 'candy'];
+        themes.forEach(t => {
+            const card = document.getElementById(`theme-${t}`);
+            const status = card.querySelector('.theme-status');
+            card.classList.remove('owned', 'active');
+            
+            if (gameState.currentTheme === t) {
+                card.classList.add('active');
+                status.innerText = "Equipped";
+                status.className = "theme-status text-success";
+            } else if (gameState.unlockedThemes.includes(t)) {
+                card.classList.add('owned');
+                status.innerText = "Owned";
+                status.className = "theme-status text-muted";
+            }
+        });
+        shopCoinElement.innerText = gameState.coins;
+    }
+
+    function buyPowerUp(type, cost) {
+        initAudio();
+        if (gameState.coins >= cost) {
+            gameState.coins -= cost;
+            gameState.powerups[type] += 1;
+            saveState();
+            refreshShopUI();
+            Sounds.buy();
+            // Pop effect on button
+            const btn = event.currentTarget;
+            btn.style.transform = "scale(1.2)";
+            setTimeout(() => btn.style.transform = "scale(1)", 200);
+        } else {
+            Sounds.error();
+            alert("Not enough coins! Keep matching!");
+        }
+    }
+    
+    function selectTheme(themeName, price) {
+        initAudio();
+        if (!gameState.unlockedThemes.includes(themeName)) {
+            if (gameState.coins >= price) {
+                gameState.coins -= price; 
+                gameState.unlockedThemes.push(themeName);
+                gameState.currentTheme = themeName;
+                saveState();
+                Sounds.buy();
+            } else {
+                alert("Not enough coins! Keep matching!"); Sounds.error(); return;
+            }
+        } else {
+            // Already owned, just equip
+            gameState.currentTheme = themeName;
+            saveState();
+            Sounds.tap();
+        }
+        applyTheme(themeName);
+        refreshShopUI();
+    }
+
+    function applyTheme(themeName) {
+        document.body.className = '';
+        if (themeName !== 'default') {
+            document.body.classList.add(`theme-${themeName}`);
+        }
+    }
+
+    // --- EFFECTS ---
+    function createParticles(x, y) {
+        const emojis = ['⭐', '💖', '🎉', '🎈'];
+        for (let i = 0; i < 6; i++) {
+            const particle = document.createElement('div'); particle.classList.add('particle'); particle.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px'); particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+            particle.style.left = (x - 20) + 'px'; particle.style.top = (y - 20) + 'px';
+            document.body.appendChild(particle); setTimeout(() => particle.remove(), 800);
+        }
+    }
+    function showFloatingText(text, x, y) {
+        const floater = document.createElement('div'); floater.classList.add('floating-score'); floater.innerText = text;
+        floater.style.left = (x - 20) + 'px'; floater.style.top = (y - 40) + 'px'; document.body.appendChild(floater);
+        setTimeout(() => floater.remove(), 1000);
+    }
+    function showComboText(text) {
+        const combo = document.createElement('div'); combo.classList.add('combo-text'); combo.innerText = text;
+        document.body.appendChild(combo); setTimeout(() => combo.remove(), 1000);
+    }
+</script>
+
+</body>
+</html>
