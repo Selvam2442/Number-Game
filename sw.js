@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
     './index.html',
     './manifest.json',
     './logo.png' ,
-  './image.png'
+    './image.png'
 ];
 
 // Install Event: Downloads everything to the phone
